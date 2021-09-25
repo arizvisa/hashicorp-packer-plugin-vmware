@@ -170,6 +170,16 @@ func (s *stepCreateVMX) Run(ctx context.Context, state multistep.StateBag) multi
 
 	templateData.DiskAndCDConfigData = vmwcommon.DefaultDiskAndCDROMTypes(config.DiskAdapterType, config.CdromAdapterType)
 
+	/// Now that we figured out the CDROM device to add, check that the user hasn't
+    /// defined a temporary cd of any kind. If so, then we add the cdrom device to
+	/// to the list of temporary build devices within our statebag.
+    if len(config.CDFiles) == 0 && len(config.CDContent) == 0 && config.CDLabel == "" {
+        tmpBuildDevices := state.Get("temporaryDevices").([]string)
+        tmpCdromDevice := fmt.Sprintf("%s0:%s", templateData.CDROMType, templateData.CDROMType_PrimarySecondary)
+        tmpBuildDevices = append(tmpBuildDevices, tmpCdromDevice)
+        state.Put("temporaryDevices", tmpBuildDevices)
+    }
+
 	/// Assign the network adapter type into the template if one was specified.
 	network_adapter := strings.ToLower(config.HWConfig.NetworkAdapterType)
 	if network_adapter != "" {
